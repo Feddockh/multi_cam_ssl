@@ -10,7 +10,8 @@ from torchvision.transforms import v2
 from torchvision.transforms.v2 import functional as F
 from torchvision.tv_tensors import Image, BoundingBoxes, BoundingBoxFormat, Mask
 from torchvision.utils import draw_bounding_boxes, draw_segmentation_masks
-from utils import Camera
+from utils_camera import Camera
+from torchvision.io import read_image
 
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -73,12 +74,17 @@ class MultiCamDataset(Dataset):
             if not os.path.exists(img_path):
                 raise ValueError(f"Image file {img_path} does not exist.")
             # Load in the image as a tensor with dimensions [C, H, W]
-            img = decode_image(img_path)
+            img = read_image(img_path)
 
             ## Load the annotations ##
             # Get the annotations for this image
             ann_ids = self.annotations[cam.name].getAnnIds(imgIds=img_id)
             anns = self.annotations[cam.name].loadAnns(ann_ids)
+            
+            if len(anns) == 0:
+                continue
+            has_valid_annotation = True
+
 
             ## Format the annotations as tv tensor ##
             # Each annotation dict contains a key "bbox" with [x, y, width, height]
@@ -121,6 +127,8 @@ class MultiCamDataset(Dataset):
 
             # Add the image and annotations to the sample for this camera
             sample[cam.name] = (img, target)
+            if not has_valid_annotation:
+                return None
         return sample
     
 # Source: https://github.com/pytorch/vision/blob/main/gallery/transforms/helpers.py
