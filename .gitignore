@@ -1,3 +1,4 @@
 dinov2/
-image_data/
+erwiam_dataset*
+rivendale_dataset*
 __pycache__/

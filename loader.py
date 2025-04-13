@@ -14,7 +14,8 @@ from utils import Camera
 
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-DATA_DIR = os.path.join(BASE_DIR, "image_data")
+# DATA_DIR = os.path.join(BASE_DIR, "rivendale_dataset")
+DATA_DIR = os.path.join(BASE_DIR, "erwiam_dataset")
 
 class MultiCamDataset(Dataset):
     def __init__(self, base_dir: str, cameras: List[Camera], transforms=None):
@@ -84,7 +85,7 @@ class MultiCamDataset(Dataset):
             # Each annotation dict contains a key "bbox" with [x, y, width, height]
             boxes_list = [ann['bbox'] for ann in anns]
             # Convert the list of boxes to a tensor of shape [num_boxes, 4]
-            boxes_tensor = torch.tensor(boxes_list, dtype=torch.float16)
+            boxes_tensor = torch.tensor(boxes_list, dtype=torch.float32)
             # Define the canvas size as (height, width)
             canvas_size = (img.shape[1], img.shape[2])
             # Create the BoundingBoxes TVTensor with the boxes in XYWH format
@@ -94,7 +95,13 @@ class MultiCamDataset(Dataset):
 
             # Each annotation dict contains a key "segmentation" with lists of polygons
             coco = self.annotations[cam.name]
-            masks_list = [coco.annToMask(ann) for ann in anns]
+            # Iterate through each annotation and convert the segmentation to a binary mask
+            masks_list = []
+            for ann in anns:
+                if ann['segmentation'] != []:
+                    masks_list.append(coco.annToMask(ann))
+                else:
+                    masks_list.append(np.zeros((img.shape[1], img.shape[2]), dtype=np.uint8))
             # Convert the list to a single numpy array of shape [num_masks, height, width]
             masks_np = np.array(masks_list, dtype=np.uint8)
             # Convert the list of masks to a tensor of shape [num_masks, height, width]
@@ -182,24 +189,27 @@ def multicam_collate_fn(samples):
 
 def demo():
     # Create the cameras
-    cam0 = Camera("firefly_left")
+    # cam0 = Camera("firefly_left") # Use this for the rivendale dataset
+    cam0 = Camera("cam0") # Use this for the erwiam dataset
     cameras = [cam0]
 
     # Define the transforms
     transforms = v2.Compose([
-        v2.Resize((255, 255), antialias=True),
-        v2.RandomHorizontalFlip(p=1),
+        v2.Resize((1024, 1024), antialias=True), # Higher for finer details
+        v2.RandomHorizontalFlip(p=0.5),
     ])
 
     # Create the dataset
     dataset = MultiCamDataset(DATA_DIR, cameras, transforms=transforms)
-    img, target = dataset[0][cam0.name]
+    view_idx = 150 # Make sure this index is valid for your dataset
+    img, target = dataset[view_idx][cam0.name] 
 
     # Print the shape of the image and annotations and plot the image with annotations
     print(f"Image shape: {img.shape}")
     print(f"Annotation boxes shape: {target['boxes'].shape}")
     print(f"Annotation masks shape: {target['masks'].shape}")
     print(f"Annotation labels shape: {target['labels'].shape}")
+    print(f"Annotation labels: {target['labels']}")
     plot([(img, target)])
 
     # Create the DataLoader using the custom collate function
