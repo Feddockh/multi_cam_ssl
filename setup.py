@@ -18,7 +18,7 @@ RIVENDALE_ZIP_URL = "https://drive.google.com/file/d/14hANjlKxG5DKPuh1oDa4T8PoYJ
 RIVENDALE_DIR = "rivendale_dataset"
 
 # Erwiand dataset configuration
-ERWIAM_ZIP_URL = "https://drive.google.com/file/d/1B-7uoVWWvBIGhbpZx0GvsAUX5zZGYbB8/view?usp=drive_link"
+ERWIAM_ZIP_URL = "https://drive.google.com/file/d/19TJcN04cpvpbew-htK-Z0UFLf942bU2f/view?usp=drive_link"
 ERWIAM_DIR = "erwiam_dataset"
 
 
