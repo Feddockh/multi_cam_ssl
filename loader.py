@@ -228,7 +228,7 @@ def demo():
     plot([(img, target)])
 
     # Create the DataLoader using the custom collate function
-    dataloader = DataLoader(dataset, batch_size=20, shuffle=True, collate_fn=multicam_collate_fn)
+    dataloader = DataLoader(dataset, batch_size=4, shuffle=True, collate_fn=multicam_collate_fn)
 
     # Iterate through the DataLoader. In this case 'batch' is a dictionary where each key is a camera name
     # and the corresponding value is a list of (image, target) tuples for that batch.
