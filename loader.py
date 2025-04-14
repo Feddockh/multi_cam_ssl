@@ -17,8 +17,14 @@ BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 # DATA_DIR = os.path.join(BASE_DIR, "rivendale_dataset")
 DATA_DIR = os.path.join(BASE_DIR, "erwiam_dataset")
 
+class SetType:
+    ALL = "annotations"
+    TRAIN = "train"
+    VAL = "val"
+
 class MultiCamDataset(Dataset):
-    def __init__(self, base_dir: str, cameras: List[Camera], transforms=None):
+    def __init__(self, base_dir: str, cameras: List[Camera], 
+                 set_type: SetType = SetType.ALL, transforms = None):
         """
         Initialize the multi-cam dataset with the base directory and camera names.
         All cameras must have the same number of images.
@@ -33,7 +39,7 @@ class MultiCamDataset(Dataset):
             cam_dir = os.path.join(base_dir, cam.name)
             if not os.path.exists(cam_dir):
                 raise ValueError(f"Camera directory {cam_dir} does not exist.")
-            cam_annotations_path = os.path.join(cam_dir, 'annotations.json')
+            cam_annotations_path = os.path.join(cam_dir, set_type + '.json')
             self.annotations[cam.name] = COCO(cam_annotations_path)
 
         # Load the image ids from the first camera (should be the same for all cameras)
@@ -81,38 +87,47 @@ class MultiCamDataset(Dataset):
             ann_ids = self.annotations[cam.name].getAnnIds(imgIds=img_id)
             anns = self.annotations[cam.name].loadAnns(ann_ids)
 
-            ## Format the annotations as tv tensor ##
-            # Each annotation dict contains a key "bbox" with [x, y, width, height]
-            boxes_list = [ann['bbox'] for ann in anns]
-            # Convert the list of boxes to a tensor of shape [num_boxes, 4]
-            boxes_tensor = torch.tensor(boxes_list, dtype=torch.float32)
             # Define the canvas size as (height, width)
             canvas_size = (img.shape[1], img.shape[2])
-            # Create the BoundingBoxes TVTensor with the boxes in XYWH format
-            boxes_tv = BoundingBoxes(boxes_tensor, format=BoundingBoxFormat.XYWH, canvas_size=canvas_size)
-            # Convert the boxes to XYXY format using transforms v2 for tv tensors
-            boxes_tv = F.convert_bounding_box_format(boxes_tv, new_format=BoundingBoxFormat.XYXY)
 
-            # Each annotation dict contains a key "segmentation" with lists of polygons
-            coco = self.annotations[cam.name]
-            # Iterate through each annotation and convert the segmentation to a binary mask
-            masks_list = []
-            for ann in anns:
-                if ann['segmentation'] != []:
-                    masks_list.append(coco.annToMask(ann))
-                else:
-                    masks_list.append(np.zeros((img.shape[1], img.shape[2]), dtype=np.uint8))
-            # Convert the list to a single numpy array of shape [num_masks, height, width]
-            masks_np = np.array(masks_list, dtype=np.uint8)
-            # Convert the list of masks to a tensor of shape [num_masks, height, width]
-            masks_tensor = torch.tensor(masks_np, dtype=torch.uint8)
-            # Create the Mask TVTensor with the masks
-            masks_tv = Mask(masks_tensor)
+            # If no annotations exist for this image, create empty targets.
+            if len(anns) == 0:
+                boxes_tv = BoundingBoxes(torch.empty((0, 4), dtype=torch.float32),
+                                        format=BoundingBoxFormat.XYWH,
+                                        canvas_size=canvas_size)
+                masks_tv = Mask(torch.empty((0, canvas_size[0], canvas_size[1]), dtype=torch.uint8))
+                labels_tensor = torch.empty((0,), dtype=torch.uint8)
+            else:
+                ## Format the annotations as tv tensor ##
+                # Each annotation dict contains a key "bbox" with [x, y, width, height]
+                boxes_list = [ann['bbox'] for ann in anns]
+                # Convert the list of boxes to a tensor of shape [num_boxes, 4]
+                boxes_tensor = torch.tensor(boxes_list, dtype=torch.float32)
+                # Create the BoundingBoxes TVTensor with the boxes in XYWH format
+                boxes_tv = BoundingBoxes(boxes_tensor, format=BoundingBoxFormat.XYWH, canvas_size=canvas_size)
+                # Convert the boxes to XYXY format using transforms v2 for tv tensors
+                boxes_tv = F.convert_bounding_box_format(boxes_tv, new_format=BoundingBoxFormat.XYXY)
 
-            # Each annotation dict contains a key "category_id" with the class label
-            labels_list = [ann['category_id'] for ann in anns]
-            # Convert the list of labels to a tensor of shape [num_labels]
-            labels_tensor = torch.tensor(labels_list, dtype=torch.uint8)
+                # Each annotation dict contains a key "segmentation" with lists of polygons
+                coco = self.annotations[cam.name]
+                # Iterate through each annotation and convert the segmentation to a binary mask
+                masks_list = []
+                for ann in anns:
+                    if ann['segmentation'] != []:
+                        masks_list.append(coco.annToMask(ann))
+                    else:
+                        masks_list.append(np.zeros((img.shape[1], img.shape[2]), dtype=np.uint8))
+                # Convert the list to a single numpy array of shape [num_masks, height, width]
+                masks_np = np.array(masks_list, dtype=np.uint8)
+                # Convert the list of masks to a tensor of shape [num_masks, height, width]
+                masks_tensor = torch.tensor(masks_np, dtype=torch.uint8)
+                # Create the Mask TVTensor with the masks
+                masks_tv = Mask(masks_tensor)
+
+                # Each annotation dict contains a key "category_id" with the class label
+                labels_list = [ann['category_id'] for ann in anns]
+                # Convert the list of labels to a tensor of shape [num_labels]
+                labels_tensor = torch.tensor(labels_list, dtype=torch.uint8)
 
             # Create a dictionary of annotations
             target = {
@@ -200,8 +215,8 @@ def demo():
     ])
 
     # Create the dataset
-    dataset = MultiCamDataset(DATA_DIR, cameras, transforms=transforms)
-    view_idx = 150 # Make sure this index is valid for your dataset
+    dataset = MultiCamDataset(DATA_DIR, cameras, set_type=SetType.TRAIN, transforms=transforms)
+    view_idx = 100 # Make sure this index is valid for your dataset
     img, target = dataset[view_idx][cam0.name] 
 
     # Print the shape of the image and annotations and plot the image with annotations
@@ -213,7 +228,7 @@ def demo():
     plot([(img, target)])
 
     # Create the DataLoader using the custom collate function
-    dataloader = DataLoader(dataset, batch_size=4, shuffle=True, collate_fn=multicam_collate_fn)
+    dataloader = DataLoader(dataset, batch_size=20, shuffle=True, collate_fn=multicam_collate_fn)
 
     # Iterate through the DataLoader. In this case 'batch' is a dictionary where each key is a camera name
     # and the corresponding value is a list of (image, target) tuples for that batch.
