@@ -18,7 +18,15 @@ class Trainer(object):
         self.device = device
         self.optim = torch.optim.Adam(self.model.parameters(), self.learning_rate)
 
-    def loss():
-        """
-        Implement
-        """
+    def loss(self):
+        for number of iterations:
+            X, y = next(trainloader)
+            y_pred = self.model(X)
+            loss = loss_fn(y, y_pred)
+            if iter % val_every_iter == 0:
+                with torch.no_grad():
+                    X_val, y_val = next(valloader)
+                    y_vpred = self.model(X_val)
+                    loss = loss_fn(y_val, y_vpred)
+
+
