@@ -1,0 +1,3 @@
+[submodule "fbdetr"]
+	path = fbdetr
+	url = git@github.com:facebookresearch/detr.git
