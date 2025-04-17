@@ -5,10 +5,10 @@ from typing import List, Dict
 from pycocotools.coco import COCO
 import torch
 from torch.utils.data import Dataset, DataLoader
-from torchvision.io import decode_image
+from torchvision.io import read_file, decode_image
 from torchvision.transforms import v2
 from torchvision.transforms.v2 import functional as F
-from torchvision.tv_tensors import Image, BoundingBoxes, BoundingBoxFormat, Mask
+from torchvision.datapoints import Image, BoundingBox, BoundingBoxFormat, Mask
 from torchvision.utils import draw_bounding_boxes, draw_segmentation_masks
 from utils import Camera
 
@@ -80,7 +80,8 @@ class MultiCamDataset(Dataset):
             if not os.path.exists(img_path):
                 raise ValueError(f"Image file {img_path} does not exist.")
             # Load in the image as a tensor with dimensions [C, H, W]
-            img = decode_image(img_path)
+            data = read_file(img_path)
+            img = decode_image(data)
 
             ## Load the annotations ##
             # Get the annotations for this image
@@ -92,9 +93,9 @@ class MultiCamDataset(Dataset):
 
             # If no annotations exist for this image, create empty targets.
             if len(anns) == 0:
-                boxes_tv = BoundingBoxes(torch.empty((0, 4), dtype=torch.float32),
+                boxes_tv = BoundingBox(torch.empty((0, 4), dtype=torch.float32),
                                         format=BoundingBoxFormat.XYWH,
-                                        canvas_size=canvas_size)
+                                        spatial_size=canvas_size)
                 masks_tv = Mask(torch.empty((0, canvas_size[0], canvas_size[1]), dtype=torch.uint8))
                 labels_tensor = torch.empty((0,), dtype=torch.uint8)
             else:
@@ -104,9 +105,9 @@ class MultiCamDataset(Dataset):
                 # Convert the list of boxes to a tensor of shape [num_boxes, 4]
                 boxes_tensor = torch.tensor(boxes_list, dtype=torch.float32)
                 # Create the BoundingBoxes TVTensor with the boxes in XYWH format
-                boxes_tv = BoundingBoxes(boxes_tensor, format=BoundingBoxFormat.XYWH, canvas_size=canvas_size)
+                boxes_tv = BoundingBox(boxes_tensor, format=BoundingBoxFormat.XYWH, spatial_size=canvas_size)
                 # Convert the boxes to XYXY format using transforms v2 for tv tensors
-                boxes_tv = F.convert_bounding_box_format(boxes_tv, new_format=BoundingBoxFormat.XYXY)
+                boxes_tv = F.convert_format_bounding_box(boxes_tv, new_format=BoundingBoxFormat.XYXY)
 
                 # Each annotation dict contains a key "segmentation" with lists of polygons
                 coco = self.annotations[cam.name]
@@ -163,18 +164,18 @@ def plot(imgs, row_title=None, **imshow_kwargs):
                 if isinstance(target, dict):
                     boxes = target.get("boxes")
                     masks = target.get("masks")
-                elif isinstance(target, BoundingBoxes):
+                elif isinstance(target, BoundingBox):
                     boxes = target
                 else:
                     raise ValueError(f"Unexpected target type: {type(target)}")
-            img = F.to_image(img)
-            if img.dtype.is_floating_point and img.min() < 0:
-                # Poor man's re-normalization for the colors to be OK-ish. This
-                # is useful for images coming out of Normalize()
-                img -= img.min()
-                img /= img.max()
+            img = F.to_image_tensor(img)
+            if torch.is_floating_point(img) and img.min() < 0:
+                # Poor man's re-normalization for the colors to be OK-ish.
+                # This is useful for images coming out of Normalize()
+                img = img - img.min()
+                img = img / img.max()
 
-            img = F.to_dtype(img, torch.uint8, scale=True)
+            img = F.convert_image_dtype(img, torch.uint8)
             if boxes is not None:
                 img = draw_bounding_boxes(img, boxes, colors="yellow", width=3)
             if masks is not None:
