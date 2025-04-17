@@ -1,9 +1,8 @@
 import sys
 import os
 sys.path.append(os.path.join(os.getcwd(), "fbdetr"))
-print(sys.path)
 from argparse import ArgumentParser
-from fbdetr.datasets import build_dataset
+from fbdetr.datasets import build_dataset, build_multicam, build_multicam_dataloader
 from torch.utils.data import DataLoader
 
 def get_args():
@@ -22,14 +21,22 @@ def get_args():
                         default="train")
     args = parser.parse_args()
     return args
-
-def main():
+def test1():
     args = get_args() # and the args.dataset_file will be 'fire_blight'
     dataset = build_dataset(args.image_set, args)
     dataloader = DataLoader(dataset, batch_size=4)
     # hell yah I get here
     for batch in dataloader:
         print(batch)
+
+def test2():
+    ds = build_multicam("train", ".")
+    dl = build_multicam_dataloader(ds)
+    for b in dl:
+        print(b)
+
+def main():
+    test2()
 
 if __name__ == "__main__":
     main()
