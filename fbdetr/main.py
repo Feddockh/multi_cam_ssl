@@ -141,8 +141,6 @@ def main(args):
 
     dataset_train = build_dataset(image_set='train', args=args)
     dataset_val = build_dataset(image_set='val', args=args)
-    dataset_train = build_multicam("train")
-    dataset_val = build_multicam("val")
 
 
     if args.distributed:
@@ -159,8 +157,6 @@ def main(args):
                                    collate_fn=utils.collate_fn, num_workers=args.num_workers)
     data_loader_val = DataLoader(dataset_val, args.batch_size, sampler=sampler_val,
                                  drop_last=False, collate_fn=utils.collate_fn, num_workers=args.num_workers)
-    data_loader_train = build_multicam_dataloader(dataset_train)
-    data_loader_val = build_multicam_dataloader(dataset_val)
 
     if args.dataset_file == "coco_panoptic":
         # We also evaluate AP during panoptic training, on original coco DS
