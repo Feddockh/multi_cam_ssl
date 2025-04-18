@@ -3,6 +3,7 @@ import os
 sys.path.append(os.path.join(os.getcwd(), "fbdetr"))
 from argparse import ArgumentParser
 from fbdetr.datasets import build_dataset, build_multicam, build_multicam_dataloader
+import fbdetr.util.misc as utils
 from torch.utils.data import DataLoader
 
 def get_args():
@@ -24,7 +25,9 @@ def get_args():
 def test1():
     args = get_args() # and the args.dataset_file will be 'fire_blight'
     dataset = build_dataset(args.image_set, args)
-    dataloader = DataLoader(dataset, batch_size=4)
+    for d in dataset:
+        print(d)
+    dataloader = DataLoader(dataset, batch_size=4, collate_fn=utils.collate_fn)
     # hell yah I get here
     for batch in dataloader:
         print(batch)
@@ -36,7 +39,7 @@ def test2():
         print(b)
 
 def main():
-    test2()
+    test1()
 
 if __name__ == "__main__":
     main()

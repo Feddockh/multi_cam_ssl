@@ -9,6 +9,8 @@ import torch
 import torchvision.transforms as T
 import torchvision.transforms.functional as F
 
+from jutils.utils import pdb
+from jutils.logger import *
 from util.box_ops import box_xyxy_to_cxcywh
 from util.misc import interpolate
 
@@ -165,6 +167,13 @@ class RandomSizeCrop(object):
         region = T.RandomCrop.get_params(img, [h, w])
         return crop(img, target, region)
 
+
+class Resize(object):
+    def __init__(self, size):
+        self.size = size
+
+    def __call__(self, img, target): # hmm they all have "target"
+        return resize(img, target, self.size)
 
 class CenterCrop(object):
     def __init__(self, size):
