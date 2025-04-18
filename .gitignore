@@ -1,4 +1,8 @@
 dinov2/
 erwiam_dataset*
 rivendale_dataset*
-__pycache__/
+__pycache__/*.swp
+**.swp
+__pycache__
+runs
+coco
