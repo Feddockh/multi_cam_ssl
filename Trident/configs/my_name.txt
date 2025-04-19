@@ -1,3 +1,11 @@
-cracked bark
-healthy bark
+healthy buds
+shriveled buds
+healthy shoots
+shriveled shoots
+healthy branches
+healthy leaves
+dead leaves
+grass
+sky
 ground
+tree
