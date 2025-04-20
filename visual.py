@@ -146,7 +146,7 @@ def plot(imgs, row_title=None, col_title=None, class_names=None, save_path=None,
 
     if save_path:
         os.makedirs(os.path.dirname(save_path), exist_ok=True)
-        plt.savefig(save_path)
+        plt.savefig(save_path, dpi=300)
     plt.show()
 
 
@@ -189,7 +189,7 @@ def plot_trident(image, seg_pred, seg_logit, name_list, add_bg=False, vis_thresh
     plt.tight_layout()
     if save_path:
         os.makedirs(os.path.dirname(save_path), exist_ok=True)
-        plt.savefig(save_path)
+        plt.savefig(save_path, dpi=300)
     plt.show()
 
 def plot_pr_curves(results, metric, class_names, save_dir=None):
@@ -226,14 +226,14 @@ def plot_pr_curves(results, metric, class_names, save_dir=None):
         plt.title(f"P–R curve for '{cls_name}' class")
         plt.xlabel("Recall")
         plt.ylabel("Precision")
-        plt.ylim(0, 1.1)
-        plt.xlim(0, 1.0)
-        plt.legend(loc="lower left", fontsize="small")
+        plt.ylim(0, 0.5)
+        plt.xlim(0, 0.2)
+        plt.legend(loc="upper right", fontsize="small")
         plt.grid(True)
         plt.tight_layout()
         if save_dir:
             os.makedirs(save_dir, exist_ok=True)
-            plt.savefig(os.path.join(save_dir, f"{cls_name}_pr_curves.png"))
+            plt.savefig(os.path.join(save_dir, f"{cls_name}_pr_curves.png"), dpi=300)
 
     # Also plot overall curve (precision averaged over classes)
     plt.figure(figsize=(6,4))
@@ -244,11 +244,11 @@ def plot_pr_curves(results, metric, class_names, save_dir=None):
     plt.title("Overall P–R curve")
     plt.xlabel("Recall")
     plt.ylabel("Precision")
-    plt.ylim(0, 1.1)
-    plt.xlim(0, 1.0)
-    plt.legend(loc="lower left", fontsize="small")
+    plt.ylim(0, 0.5)
+    plt.xlim(0, 0.2)
+    plt.legend(loc="upper right", fontsize="small")
     plt.grid(True)
     plt.tight_layout()
     if save_dir:
-        plt.savefig(os.path.join(save_dir, "overall_pr_curves.png"))
+        plt.savefig(os.path.join(save_dir, "overall_pr_curves.png"), dpi=300)
     plt.show()

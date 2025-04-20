@@ -22,6 +22,7 @@ from visual import plot, plot_trident, plot_pr_curves
 # Visualize settings
 VIS = True
 SEED = 42
+LOAD_METRICS = True
 
 # Path settings
 DATA_DIR = os.path.join(BASE_DIR, "erwiam_dataset", "cam0")
@@ -126,6 +127,8 @@ map_metric = MeanAveragePrecision(
 print("Starting evaluation ...")
 with torch.no_grad():
     for i, (img, target, img_path) in enumerate(tqdm(loader, total=len(loader), desc="Inference", unit="img")):
+        if LOAD_METRICS:
+            break
         img = img.to(DEVICE)
 
         # Compress the dataset class labels to the current class labels
@@ -187,7 +190,10 @@ with torch.no_grad():
 
 # Compute and save the mean average precision results
 print("Computing metrics ...")
-results = map_metric.compute()
+if LOAD_METRICS:
+    results = torch.load(os.path.join(BASE_DIR, "results", "trident_results.pth"))
+else:
+    results = map_metric.compute()
 torch.save(results, os.path.join(BASE_DIR, "results", "trident_results.pth"))
 print("Evaluation Metrics:")
 
