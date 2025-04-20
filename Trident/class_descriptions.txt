@@ -1,0 +1,12 @@
+healthy buds
+shriveled buds
+healthy shoots
+shriveled shoots
+healthy branches
+shriveled branches
+healthy leaves
+shriveled leaves
+grass
+sky
+ground
+tree

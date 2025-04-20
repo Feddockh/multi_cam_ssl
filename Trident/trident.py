@@ -17,7 +17,7 @@ import torch.nn.functional as F
 
 from open_clip import create_model, tokenizer
 from segment_anything import sam_model_registry, SamPredictor
-from myutils import UnNormalize
+from Trident.myutils import UnNormalize
 from seg_utils.utils import sam_refinement, preprocess_image
 
 import cv2
