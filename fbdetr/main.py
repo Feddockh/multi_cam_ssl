@@ -128,7 +128,6 @@ def main(args):
         model_without_ddp = model.module
     n_parameters = sum(p.numel() for p in model.parameters() if p.requires_grad)
     print('number of params:', n_parameters)
-    print_trainable_parameters(model_without_ddp)
     param_dicts = [
         {"params": [p for n, p in model_without_ddp.named_parameters() if "backbone" not in n and p.requires_grad]},
         {
@@ -182,6 +181,7 @@ def main(args):
             checkpoint = torch.load(args.resume, map_location='cpu')
         load_state_dict_up_to_classif_head(model_without_ddp, args)
         model_without_ddp = loraify(model_without_ddp)
+        print_trainable_parameters(model_without_ddp)
         if not args.eval and 'optimizer' in checkpoint and 'lr_scheduler' in checkpoint and 'epoch' in checkpoint:
             optimizer.load_state_dict(checkpoint['optimizer'])
             lr_scheduler.load_state_dict(checkpoint['lr_scheduler'])
