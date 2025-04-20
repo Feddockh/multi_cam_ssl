@@ -253,25 +253,3 @@ def trident_to_target(elem: BaseDataElement, bg_idx: int = 0, min_area: float = 
         "scores": scores
     }
     return target
-
-
-
-
-
-
-# def simple_assignment(pred_boxes, gt_boxes, iou_thr=0.5):
-#     """Greedy IoU matching – returns idx pairs (pred_idx, gt_idx)."""
-#     if pred_boxes.numel() == 0 or gt_boxes.numel() == 0:
-#         return []
-#     ious = box_iou(pred_boxes, gt_boxes)
-#     matches = []
-#     while True:
-#         val, idx = torch.max(ious, dim=0)
-#         max_iou, gt_idx = val.max(0)
-#         if max_iou < iou_thr:
-#             break
-#         pred_idx = idx[gt_idx].item()
-#         matches.append((pred_idx, gt_idx.item()))
-#         ious[pred_idx, :] = -1  # mark row / col used
-#         ious[:, gt_idx] = -1
-#     return matches
