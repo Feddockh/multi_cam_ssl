@@ -37,8 +37,9 @@ def test_detr_loraify():
     detr.load_state_dict(weights)
     detr_lora = loraify(detr)
     for b in dataloader:
+        images, targets = b
         pdb()
-        pred = detr_lora(b)
+        pred = detr_lora(images)
         print(pred)
 
 def main():
