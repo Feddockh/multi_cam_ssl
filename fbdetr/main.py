@@ -9,7 +9,9 @@ from pathlib import Path
 import numpy as np
 import torch
 from torch.utils.data import DataLoader, DistributedSampler
-
+from jutils.nn_utils import (loraify,
+                             load_state_dict_up_to_classif_head,
+                             print_trainable_parameters)
 import datasets
 import util.misc as utils
 from datasets import build_dataset, get_coco_api_from_dataset
@@ -120,26 +122,28 @@ def main(args):
 
     model, criterion, postprocessors = build_model(args)
     model.to(device)
-
     model_without_ddp = model
     if args.distributed:
         model = torch.nn.parallel.DistributedDataParallel(model, device_ids=[args.gpu])
         model_without_ddp = model.module
     n_parameters = sum(p.numel() for p in model.parameters() if p.requires_grad)
     print('number of params:', n_parameters)
-
+    print_trainable_parameters(model_without_ddp)
     param_dicts = [
         {"params": [p for n, p in model_without_ddp.named_parameters() if "backbone" not in n and p.requires_grad]},
         {
             "params": [p for n, p in model_without_ddp.named_parameters() if "backbone" in n and p.requires_grad],
             "lr": args.lr_backbone,
         },
-    ]
+    ] #TODO should only include the lora params
     optimizer = torch.optim.AdamW(param_dicts, lr=args.lr,
                                   weight_decay=args.weight_decay)
     lr_scheduler = torch.optim.lr_scheduler.StepLR(optimizer, args.lr_drop)
 
-    dataset_train = build_dataset(image_set='train', args=args)
+    if args.dataset_file != 'fire_blight':
+        raise Exception("Wrong dataset file")
+    dataset_train = build_dataset(image_set='train', args=args) #TODO and the args should specify the fire
+    #blight dataset
     dataset_val = build_dataset(image_set='val', args=args)
 
 
@@ -170,13 +174,14 @@ def main(args):
         model_without_ddp.detr.load_state_dict(checkpoint['model'])
 
     output_dir = Path(args.output_dir)
-    if args.resume:
+    if args.resume: 
         if args.resume.startswith('https'):
             checkpoint = torch.hub.load_state_dict_from_url(
                 args.resume, map_location='cpu', check_hash=True)
         else:
             checkpoint = torch.load(args.resume, map_location='cpu')
-        model_without_ddp.load_state_dict(checkpoint['model'])
+        load_state_dict_up_to_classif_head(model_without_ddp, args)
+        model_without_ddp = loraify(model_without_ddp)
         if not args.eval and 'optimizer' in checkpoint and 'lr_scheduler' in checkpoint and 'epoch' in checkpoint:
             optimizer.load_state_dict(checkpoint['optimizer'])
             lr_scheduler.load_state_dict(checkpoint['lr_scheduler'])
@@ -185,6 +190,7 @@ def main(args):
     if args.eval:
         test_stats, coco_evaluator = evaluate(model, criterion, postprocessors,
                                               data_loader_val, base_ds, device, args.output_dir)
+        #TODO goal: get this line of code running. All the stats are here
         if args.output_dir:
             utils.save_on_master(coco_evaluator.coco_eval["bbox"].eval, output_dir / "eval.pth")
         return
