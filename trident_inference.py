@@ -4,9 +4,10 @@ import torch
 from torch.utils.data import DataLoader
 from torchvision import transforms
 from torchmetrics.detection.mean_ap import MeanAveragePrecision
+from torchmetrics.detection.iou import IntersectionOverUnion
 from mmengine.structures import BaseDataElement
 from tqdm.auto import tqdm
-
+import matplotlib.pyplot as plt
 
 # Update Python path to include the Trident directory
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -15,8 +16,12 @@ sys.path.append(os.path.join(BASE_DIR, "Trident"))
 from Trident.trident import Trident
 from coco_det_dataset import CocoDetDataset, collate_fn
 from trident_helpers import remap_trident_output, trident_to_target
-from visual import plot, plot_trident
+from visual import plot, plot_trident, plot_pr_curves
 
+
+# Visualize settings
+VIS = False
+SEED = 42
 
 # Path settings
 DATA_DIR = os.path.join(BASE_DIR, "erwiam_dataset", "cam0")
@@ -97,7 +102,7 @@ ANN_FILE = os.path.join(DATA_DIR, "val.json")
 dataset = CocoDetDataset(IMG_FOLDER, ANN_FILE, transform=tensor_transform, include_paths=True)
 
 # Create a DataLoader for the dataset
-torch.manual_seed(42)
+torch.manual_seed(SEED)
 loader = DataLoader(
     dataset = dataset, 
     batch_size = 1, # Batch size of 1 for Trident inference
@@ -107,7 +112,16 @@ loader = DataLoader(
 )
 
 # Initialize metrics
-map_metric = MeanAveragePrecision(box_format="xyxy", iou_type="bbox", iou_thresholds=[0.5])
+# Reference: https://lightning.ai/docs/torchmetrics/stable/detection/mean_average_precision.html
+map_metric = MeanAveragePrecision(
+    box_format = "xyxy", 
+    iou_type = "bbox", 
+    iou_thresholds = None, # [0.50, 0.55, ..., 0.95]
+    rec_thresholds = None, # [0.01, 0.02, ..., 1.0]
+    max_detection_thresholds = None, # [1, 10, 100]
+    class_metrics = True, # Enable per-class metrics for mAP and mAR_100
+    extended_summary = True, # Enable summary with additional metrics including IOU, precision and recall
+)
 
 print("Starting evaluation ...")
 with torch.no_grad():
@@ -133,13 +147,14 @@ with torch.no_grad():
         pred = model.predict(img, data_samples=[data_sample])[0]
 
         # Plot the trident output
-        vis_img = inv_norm(img[0])
-        plot_trident(
-            image = vis_img,
-            seg_pred = pred.pred_sem_seg.data,
-            seg_logit = pred.seg_logits.data,
-            name_list = list(DESCRIPTION_TO_CLASS_IDX.keys())
-        )
+        if VIS:
+            vis_img = inv_norm(img[0])
+            plot_trident(
+                image = vis_img,
+                seg_pred = pred.pred_sem_seg.data,
+                seg_logit = pred.seg_logits.data,
+                name_list = list(DESCRIPTION_TO_CLASS_IDX.keys())
+            )
 
         # Remap the class indices to the original dataset
         pred = remap_trident_output(pred, CLASS_MAPPING, NUM_CLASSES)
@@ -153,16 +168,40 @@ with torch.no_grad():
             dist_thresh = 50.0,
             out_device="cpu"
         )
-        
-        # Debugging (display unnormalized image and predictions)
-        plot([(vis_img, pred_target), (vis_img, target[0])], class_names=CLASS_LIST)
 
+        # Add the metric update
         map_metric.update(preds=[pred_target], target=target)
-        break
+        
+        # Debugging (display unnormalized image and box predictions)
+        if VIS:
+            plot([(vis_img, pred_target), (vis_img, target[0])], class_names=CLASS_LIST)
 
-        if i >= 10:
+        if i >= 20:
             break
 
-# Compute the mean average precision
+# Compute and save the mean average precision results
+print("Computing metrics ...")
 results = map_metric.compute()
-print(f"mAP@0.5 = {results['map']:.4f}")
+torch.save(results, os.path.join(BASE_DIR, "results", "trident_results.pth"))
+print("Evaluation Metrics:")
+
+print(f"mAP@[.50:.95]        = {results['map']:.4f}")
+print(f"mAP@.50              = {results['map_50']:.4f}")
+print(f"mAP@.75              = {results['map_75']:.4f}")
+print(f"mAP@.50:.95 (small)  = {results['map_small']:.4f}")
+print(f"mAP@.50:.95 (medium) = {results['map_medium']:.4f}")
+print(f"mAP@.50:.95 (large)  = {results['map_large']:.4f}")
+print(f"mAR@1                = {results['mar_1']:.4f}")
+print(f"mAR@10               = {results['mar_10']:.4f}")
+print(f"mAR@100              = {results['mar_100']:.4f}")
+print(f"mAR@100 (small)      = {results['mar_small']:.4f}")
+print(f"mAR@100 (medium)     = {results['mar_medium']:.4f}")
+print(f"mAR@100 (large)      = {results['mar_large']:.4f}")
+
+# Plot the precision-recall curves
+plot_pr_curves(
+    results = results,
+    metric = map_metric,
+    class_names = CLASS_LIST[1:],
+    save_dir = os.path.join(BASE_DIR, "results")
+)
