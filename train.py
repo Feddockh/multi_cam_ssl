@@ -3,17 +3,8 @@ import torch
 import tqdm
 from torch import nn
 from torch.utils.data import DataLoader
-def get_state_dict(args):
-    # args.frozen state_dict is the path to the checkpoint
-    checkpoint = torch.hub.load_state_dict_from_url(args.resume, map_location='cpu')
-    return checkpoint['model']
+from jutils.nn_utils import load_state_dict_up_to_classif_head
 
-def load_state_dict_up_to_classif_head(detr, args):
-    state_dict = get_state_dict(args)
-    for k,v in list(state_dict.items()):
-        if "class_embed" in k:
-            state_dict.pop(k)
-    detr.load_state_dict(state_dict, strict=False)
 
 def main():
     parser = get_args_parser()
