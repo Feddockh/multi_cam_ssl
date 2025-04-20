@@ -29,14 +29,16 @@ def to_uint8(img) -> torch.Tensor:
         img = img.to(torch.uint8)
     return img
 
-def plot(imgs, row_title=None, class_names=None, **imshow_kwargs):
+def plot(imgs, row_title=None, col_title=None, class_names=None, save_path=None, **imshow_kwargs):
     """
     Plot a grid of images with optional bounding boxes, masks, and labels.
 
     Args:
         imgs (list or list of lists of tuples): Each element is an (image, target) tuple.
         row_title (list, optional): Titles for each row.
+        col_title (list, optional): Titles for each column.
         class_names (list, optional): List of class names (idx 0 = background).
+        save_path (str, optional): Path to save the plot.
         imshow_kwargs (dict, optional): Additional arguments for plt.imshow().
     """
 
@@ -119,6 +121,11 @@ def plot(imgs, row_title=None, class_names=None, **imshow_kwargs):
         for r in range(n_rows):
             axs[r, 0].set_ylabel(row_title[r], rotation=0, labelpad=40, va="center")
 
+    # Add titles to the columns
+    if col_title is not None:
+        for c in range(n_cols):
+            axs[0, c].set_title(col_title[c], fontsize=16)
+
     # Add legend for class names
     if class_names:
         handles = [
@@ -137,6 +144,9 @@ def plot(imgs, row_title=None, class_names=None, **imshow_kwargs):
     else:
         plt.tight_layout()
 
+    if save_path:
+        os.makedirs(os.path.dirname(save_path), exist_ok=True)
+        plt.savefig(save_path)
     plt.show()
 
 
@@ -158,7 +168,7 @@ def show_mask(mask, ax, random_color=False, default_color =  [30/255, 144/255, 2
     ax.imshow(mask_image)
     return color
 
-def plot_trident(image, seg_pred, seg_logit, name_list, add_bg=False, vis_thresh=0.01):    
+def plot_trident(image, seg_pred, seg_logit, name_list, add_bg=False, vis_thresh=0.01, save_path=None):    
     cls_pred = torch.nn.functional.one_hot(
         seg_pred.squeeze(0).long(), num_classes=len(name_list) + int(add_bg)
     ).permute(2, 0, 1).float()  # [C, H, W]
@@ -177,6 +187,9 @@ def plot_trident(image, seg_pred, seg_logit, name_list, add_bg=False, vis_thresh
     plt.axis('off')
     plt.legend(handles=patches, bbox_to_anchor=(1.05, 1), loc='upper left', borderaxespad=0.)
     plt.tight_layout()
+    if save_path:
+        os.makedirs(os.path.dirname(save_path), exist_ok=True)
+        plt.savefig(save_path)
     plt.show()
 
 def plot_pr_curves(results, metric, class_names, save_dir=None):
@@ -219,6 +232,7 @@ def plot_pr_curves(results, metric, class_names, save_dir=None):
         plt.grid(True)
         plt.tight_layout()
         if save_dir:
+            os.makedirs(save_dir, exist_ok=True)
             plt.savefig(os.path.join(save_dir, f"{cls_name}_pr_curves.png"))
 
     # Also plot overall curve (precision averaged over classes)

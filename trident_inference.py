@@ -20,7 +20,7 @@ from visual import plot, plot_trident, plot_pr_curves
 
 
 # Visualize settings
-VIS = False
+VIS = True
 SEED = 42
 
 # Path settings
@@ -153,7 +153,8 @@ with torch.no_grad():
                 image = vis_img,
                 seg_pred = pred.pred_sem_seg.data,
                 seg_logit = pred.seg_logits.data,
-                name_list = list(DESCRIPTION_TO_CLASS_IDX.keys())
+                name_list = list(DESCRIPTION_TO_CLASS_IDX.keys()),
+                save_path = os.path.join(BASE_DIR, "results", "trident_out", os.path.basename(img_path[0]))
             )
 
         # Remap the class indices to the original dataset
@@ -174,10 +175,15 @@ with torch.no_grad():
         
         # Debugging (display unnormalized image and box predictions)
         if VIS:
-            plot([(vis_img, pred_target), (vis_img, target[0])], class_names=CLASS_LIST)
+            plot(
+                imgs = [(vis_img, pred_target), (vis_img, target[0])], 
+                class_names=CLASS_LIST,
+                col_title=["Predictions", "Ground Truth"],
+                save_path=os.path.join(BASE_DIR, "results", "bbox_predictions", os.path.basename(img_path[0]))
+            )
 
-        # if i >= 20:
-        #     break
+        if i >= 20:
+            break
 
 # Compute and save the mean average precision results
 print("Computing metrics ...")
