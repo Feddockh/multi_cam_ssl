@@ -3,4 +3,4 @@ erwiam_dataset*
 rivendale_dataset*
 __pycache__/
 Trident/segment_anything/sam_vit_b_01ec64.pth
-results/
+# results/

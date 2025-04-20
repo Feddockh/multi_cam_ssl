@@ -176,8 +176,8 @@ with torch.no_grad():
         if VIS:
             plot([(vis_img, pred_target), (vis_img, target[0])], class_names=CLASS_LIST)
 
-        if i >= 20:
-            break
+        # if i >= 20:
+        #     break
 
 # Compute and save the mean average precision results
 print("Computing metrics ...")
