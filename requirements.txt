@@ -27,6 +27,7 @@ jmespath==0.10.0
 joblib==1.4.2
 kiwisolver==1.4.8
 lazy_loader==0.4
+lightning-utilities==0.14.3
 lit==15.0.7
 Markdown==3.8
 markdown-it-py==3.0.0
@@ -84,6 +85,7 @@ tokenizers==0.15.2
 tomli==2.2.1
 torch==2.0.0+cu117
 torchaudio==2.0.0+cu117
+torchmetrics==1.7.1
 torchvision==0.15.1+cu117
 tqdm==4.65.2
 transformers==4.37.2
