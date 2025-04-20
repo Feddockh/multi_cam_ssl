@@ -9,10 +9,6 @@ from fbdetr.models import build_model
 from fbdetr.main import get_args_parser
 from torch.utils.data import DataLoader
 
-def get_weights(args):
-    # args.frozen weights is the path to the checkpoint
-    checkpoint = torch.hub.load_state_dict_from_url(args.resume, map_location='cpu')
-    return checkpoint['model']
 
 
 def test_detr_loraify():
