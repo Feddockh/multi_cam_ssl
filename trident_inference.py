@@ -15,14 +15,17 @@ sys.path.append(os.path.join(BASE_DIR, "Trident"))
 
 from Trident.trident import Trident
 from coco_det_dataset import CocoDetDataset, collate_fn
-from trident_helpers import remap_trident_output, trident_to_target
+from trident_helpers import remap_trident_output, trident_to_target, \
+                                filter_boxes, merge_close_boxes
 from visual import plot, plot_trident, plot_pr_curves
 
 
+# Skip all and just load / plot the metrics
+LOAD_METRICS = False
+
 # Visualize settings
-VIS = True
+VIS = False
 SEED = 42
-LOAD_METRICS = True
 
 # Path settings
 DATA_DIR = os.path.join(BASE_DIR, "erwiam_dataset", "cam0")
@@ -134,6 +137,29 @@ with torch.no_grad():
         # Compress the dataset class labels to the current class labels
         target[0]["labels"] = (target[0]["labels"] > 0).long()
 
+        # Merge the target boxes like we do later in the predictions
+        new_boxes_list = []
+        new_labels_list = []
+        for class_id in torch.unique(target[0]["labels"]):
+            # Get the bounding boxes for the current class
+            mask = target[0]["labels"] == class_id
+            class_boxes = target[0]["boxes"][mask]
+
+            # Filter the class boxes and merge them
+            class_boxes = filter_boxes(class_boxes, min_area=50.0)
+            class_boxes = merge_close_boxes(class_boxes, iou_thresh=0.1, dist_thresh=50.0)
+            
+            # Update the lists with the new boxes and labels
+            new_boxes_list.append(class_boxes)
+            new_labels_list.append(class_id.repeat(class_boxes.shape[0]))
+
+        # Concatentate the new boxes and labels and store them in the target
+        if len(new_boxes_list) == 0:
+            new_boxes_list = [torch.empty((0, 4), dtype=torch.float32)]
+            new_labels_list = [torch.empty((0,), dtype=torch.int64)]
+        target[0]["boxes"] = torch.cat(new_boxes_list, dim=0)
+        target[0]["labels"] = torch.cat(new_labels_list, dim=0)
+        
         # Build data samples for Trident prediction function
         B, C, H, W = img.shape
         
@@ -168,7 +194,7 @@ with torch.no_grad():
             elem = pred,
             bg_idx = 0,
             min_area = 50.0,
-            iou_thresh = 0.7,
+            iou_thresh = 0.1,
             dist_thresh = 50.0,
             out_device="cpu"
         )
@@ -185,8 +211,13 @@ with torch.no_grad():
                 save_path=os.path.join(BASE_DIR, "results", "bbox_predictions", os.path.basename(img_path[0]))
             )
 
-        if i >= 20:
-            break
+            # We don't need to save all the images, just a few for visualization
+            if i >= 20:
+                break
+
+if VIS:
+    print("Visualization complete. Check the results folder for images.")
+    exit()
 
 # Compute and save the mean average precision results
 print("Computing metrics ...")
@@ -215,5 +246,7 @@ plot_pr_curves(
     results = results,
     metric = map_metric,
     class_names = CLASS_LIST[1:],
+    max_x = 0.25,
+    max_y = 1.05,
     save_dir = os.path.join(BASE_DIR, "results")
 )

@@ -108,7 +108,7 @@ def plot(imgs, row_title=None, col_title=None, class_names=None, save_path=None,
                     labels=lbls,
                     colors=cols,
                     width=3,
-                    font_size=20,
+                    # font_size=20,
                 )
 
             ax = axs[r, c]
@@ -147,8 +147,9 @@ def plot(imgs, row_title=None, col_title=None, class_names=None, save_path=None,
     if save_path:
         os.makedirs(os.path.dirname(save_path), exist_ok=True)
         plt.savefig(save_path, dpi=300)
-    plt.show()
-
+    else:
+        plt.show()
+    plt.close()
 
 # Pulled from trident_demo.py
 VOC_COLORMAP = [[0, 0, 0], [128, 0, 0], [0, 128, 0], [128, 128, 0],
@@ -190,9 +191,11 @@ def plot_trident(image, seg_pred, seg_logit, name_list, add_bg=False, vis_thresh
     if save_path:
         os.makedirs(os.path.dirname(save_path), exist_ok=True)
         plt.savefig(save_path, dpi=300)
-    plt.show()
+    else:
+        plt.show()
+    plt.close()
 
-def plot_pr_curves(results, metric, class_names, save_dir=None):
+def plot_pr_curves(results, metric, class_names, max_x=1.0, max_y=1.05, save_dir=None):
     """
     This function plots the precision-recall curves for each class and an overall curve.
     
@@ -226,8 +229,8 @@ def plot_pr_curves(results, metric, class_names, save_dir=None):
         plt.title(f"P–R curve for '{cls_name}' class")
         plt.xlabel("Recall")
         plt.ylabel("Precision")
-        plt.ylim(0, 0.5)
-        plt.xlim(0, 0.2)
+        plt.ylim(0, max_y)
+        plt.xlim(0, max_x)
         plt.legend(loc="upper right", fontsize="small")
         plt.grid(True)
         plt.tight_layout()
@@ -244,11 +247,13 @@ def plot_pr_curves(results, metric, class_names, save_dir=None):
     plt.title("Overall P–R curve")
     plt.xlabel("Recall")
     plt.ylabel("Precision")
-    plt.ylim(0, 0.5)
-    plt.xlim(0, 0.2)
+    plt.ylim(0, max_y)
+    plt.xlim(0, max_x)
     plt.legend(loc="upper right", fontsize="small")
     plt.grid(True)
     plt.tight_layout()
     if save_dir:
         plt.savefig(os.path.join(save_dir, "overall_pr_curves.png"), dpi=300)
-    plt.show()
+    else:
+        plt.show()
+    plt.close('all')
