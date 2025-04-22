@@ -93,17 +93,27 @@ def main():
     im = Image.open(path).convert("RGB")
     parser = get_args_parser()
     args = parser.parse_args()
-    # probably not building the model right. 
     detr, *_ = build_model(args)
-    ckpt = torch.load(Path.cwd() / "checkpoints" / "checkpoint.pth", weights_only=False)
+    detr.eval()
+    ckpt = torch.load(Path("checkpoints") / "checkpoint.pth", weights_only=False)
+    prefix = "base_model.model."
     state_dict = ckpt['model']
-    modified_sd = OrderedDict()
-    for k,v in list(state_dict.items()):
-        new_key = "base_model.model." + k
-        modified_sd[new_key] = v
-    missing, unexpected = detr.load_state_dict(modified_sd, strict=False)
-    scores, boxes = detect(im, detr, transform)
-    plot_results(im, scores, boxes)
+    filtered_sd = OrderedDict(
+            ((k[len(prefix):], v) if k.startswith(prefix) else (k,v))
+            for k,v in list(state_dict.items())
+            )
+    new_sd = OrderedDict()
+    for k,v in list(filtered_sd.items()):
+        new_k = k.replace(".base_layer", "")
+        new_sd[new_k] = v
+
+    missing, unexpected = detr.load_state_dict(new_sd, strict=False)
+    with torch.no_grad():
+        scores, boxes = detect(im, detr, transform)
+    results = Path("bboxes") / "0884"
+    if not results.exists():
+        os.makedirs(results)
+    plot_results(im, scores, boxes, results)
 
 if __name__ == "__main__":
     main()
