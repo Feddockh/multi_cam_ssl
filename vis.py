@@ -1,4 +1,5 @@
 from pathlib import Path
+import os
 from collections import OrderedDict
 from jutils.utils import add_module_to_path
 add_module_to_path("fbdetr")
@@ -55,7 +56,6 @@ def detect(im, model, transform):
     assert img.shape[-2] <= 1600 and img.shape[-1] <= 1600, 'demo model only supports images up to 1600 pixels on each side'
 
     # propagate through the model
-    pdb()
     outputs = model(img)
 
     # keep only predictions with 0.7+ confidence
@@ -67,7 +67,7 @@ def detect(im, model, transform):
     return probas[keep], bboxes_scaled
 
 
-def plot_results(pil_img, prob, boxes):
+def plot_results(pil_img, prob, boxes, save_path=None):
     plt.figure(figsize=(16,10))
     plt.imshow(pil_img)
     ax = plt.gca()
@@ -75,11 +75,13 @@ def plot_results(pil_img, prob, boxes):
         ax.add_patch(plt.Rectangle((xmin, ymin), xmax - xmin, ymax - ymin,
                                    fill=False, color=c, linewidth=3))
         cl = p.argmax()
-        text = f'{CLASSES[cl]}: {p[cl]:0.2f}'
-        ax.text(xmin, ymin, text, fontsize=15,
-                bbox=dict(facecolor='yellow', alpha=0.5))
+        # text = f'{CLASSES[cl]}: {p[cl]:0.2f}'
+        # ax.text(xmin, ymin, text, fontsize=15,
+        #         bbox=dict(facecolor='yellow', alpha=0.5))
     plt.axis('off')
     plt.show()
+    if save_path is not None:
+        plt.savefig(save_path, dpi=300, bbox_inches="tight")
 
 def main():
     transform = T.Compose([
