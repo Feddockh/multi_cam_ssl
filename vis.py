@@ -89,13 +89,15 @@ def main():
         T.ToTensor(),
         T.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])
     ])
-    path = Path("erwiam_dataset") / "cam0" / "images" / "20220622_CanonEOS90D_0884_KGH.JPG"
+    image_name =  "20220622_CanonEOS90D_0884_KGH.JPG"
+    path = Path("erwiam_dataset") / "cam0" / "images" / image_name
     im = Image.open(path).convert("RGB")
     parser = get_args_parser()
     args = parser.parse_args()
     detr, *_ = build_model(args)
     detr.eval()
-    ckpt = torch.load(Path("checkpoints") / "checkpoint.pth", weights_only=False)
+    epoch = "0199"
+    ckpt = torch.load(Path("checkpoints") / f"checkpoint{epoch}.pth", weights_only=False)
     prefix = "base_model.model."
     state_dict = ckpt['model']
     filtered_sd = OrderedDict(
@@ -106,13 +108,10 @@ def main():
     for k,v in list(filtered_sd.items()):
         new_k = k.replace(".base_layer", "")
         new_sd[new_k] = v
-
     missing, unexpected = detr.load_state_dict(new_sd, strict=False)
     with torch.no_grad():
         scores, boxes = detect(im, detr, transform)
-    results = Path("bboxes") / "0884"
-    if not results.exists():
-        os.makedirs(results)
+    results = Path("bboxes") / image_name
     plot_results(im, scores, boxes, results)
 
 if __name__ == "__main__":
