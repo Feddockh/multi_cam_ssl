@@ -1,6 +1,6 @@
 import sys
 from jutils.utils import add_module_to_path, pdb
-from jutils.nn_utils import loraify
+from jutils.nn_utils import lorafy
 add_module_to_path("fbdetr")
 import torch
 from fbdetr.datasets import build_dataset
@@ -11,7 +11,7 @@ from torch.utils.data import DataLoader
 
 
 
-def test_detr_loraify():
+def test_detr_lorafy():
     print(sys.path)
     parser = get_args_parser()
     args = parser.parse_args()

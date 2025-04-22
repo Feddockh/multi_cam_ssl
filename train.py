@@ -12,7 +12,7 @@ def main():
     num_classes = 4 #TODO how many classes is it actually
     detr, criterion, _ = get_model(num_classes) #TODO
     load_state_dict_up_to_classif_head(detr, args) 
-    detr_lora = loraify(detr)
+    detr_lora = lorafy(detr)
     detr_lora.to("cuda")
     optimizer = torch.optim.Adam(detr.parameters(), lr, etc)
     trainset = build_dataset("train")
