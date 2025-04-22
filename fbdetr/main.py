@@ -9,9 +9,10 @@ from pathlib import Path
 import numpy as np
 import torch
 from torch.utils.data import DataLoader, DistributedSampler
-from jutils.nn_utils import (loraify,
+from jutils.nn_utils import (lorafy,
                              load_state_dict_up_to_classif_head,
-                             print_trainable_parameters)
+                             print_trainable_parameters,
+                             unlorafy_state_dict)
 from jutils.logger import get_writer, get_step
 from jutils.utils import pdb
 import datasets
@@ -172,11 +173,17 @@ def main(args):
             checkpoint = torch.hub.load_state_dict_from_url(
                 args.resume, map_location='cpu', check_hash=True)
         else:
-            checkpoint = torch.load(args.resume, map_location='cpu')
-        load_state_dict_up_to_classif_head(model_without_ddp, args)
-        model_without_ddp = loraify(model_without_ddp)
-        make_new_class_embed_trainable(model_without_ddp)
-        print_trainable_parameters(model_without_ddp)
+            checkpoint = torch.load(args.resume, map_location='cpu', weights_only=False)
+        if not args.eval:
+            load_state_dict_up_to_classif_head(model_without_ddp, args)
+            model_without_ddp = lorafy(model_without_ddp)
+            make_new_class_embed_trainable(model_without_ddp)
+            print_trainable_parameters(model_without_ddp)
+        else:
+            state_dict = checkpoint['model']
+            state_dict = unlorafy_state_dict(state_dict)
+            model_without_ddp.load_state_dict(state_dict, strict=False)
+
         if not args.eval and 'optimizer' in checkpoint and 'lr_scheduler' in checkpoint and 'epoch' in checkpoint:
             optimizer.load_state_dict(checkpoint['optimizer'])
             lr_scheduler.load_state_dict(checkpoint['lr_scheduler'])
