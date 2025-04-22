@@ -105,6 +105,10 @@ def get_args_parser():
     parser.add_argument('--dist_url', default='env://', help='url used to set up distributed training')
     return parser
 
+def make_new_class_embed_trainable(model):
+    for n,p in model.named_parameters():
+        if "class_embed" in n:
+            p.requires_grad_(True)
 
 def main(args):
     utils.init_distributed_mode(args)
@@ -171,6 +175,7 @@ def main(args):
             checkpoint = torch.load(args.resume, map_location='cpu')
         load_state_dict_up_to_classif_head(model_without_ddp, args)
         model_without_ddp = loraify(model_without_ddp)
+        make_new_class_embed_trainable(model_without_ddp)
         print_trainable_parameters(model_without_ddp)
         if not args.eval and 'optimizer' in checkpoint and 'lr_scheduler' in checkpoint and 'epoch' in checkpoint:
             optimizer.load_state_dict(checkpoint['optimizer'])
@@ -220,7 +225,6 @@ def main(args):
                     'args': args,
                 }, checkpoint_path)
                 model_without_ddp.unmerge_adapter()
-
         test_stats, coco_evaluator = evaluate(
             model, criterion, postprocessors, data_loader_val, base_ds, device, args.output_dir
         )
