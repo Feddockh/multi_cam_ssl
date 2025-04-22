@@ -211,6 +211,7 @@ def main(args):
             if (epoch + 1) % args.lr_drop == 0 or (epoch + 1) % 100 == 0:
                 checkpoint_paths.append(output_dir / f'checkpoint{epoch:04}.pth')
             for checkpoint_path in checkpoint_paths:
+                model_without_ddp.merge_adapter()
                 utils.save_on_master({
                     'model': model_without_ddp.state_dict(),
                     'optimizer': optimizer.state_dict(),
@@ -218,11 +219,12 @@ def main(args):
                     'epoch': epoch,
                     'args': args,
                 }, checkpoint_path)
+                model_without_ddp.unmerge_adapter()
 
         test_stats, coco_evaluator = evaluate(
             model, criterion, postprocessors, data_loader_val, base_ds, device, args.output_dir
         )
-
+        # loss_ce, loss_bbox
         log_stats = {**{f'train_{k}': v for k, v in train_stats.items()},
                      **{f'test_{k}': v for k, v in test_stats.items()},
                      'epoch': epoch,
