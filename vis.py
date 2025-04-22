@@ -7,7 +7,7 @@ import torch
 import torchvision.transforms as T
 import matplotlib.pyplot as plt
 from PIL import Image
-from jutils.nn_utils import loraify
+from jutils.nn_utils import lorafy
 from jutils.utils import pdb
 from fbdetr.main import get_args_parser
 from fbdetr.models import build_model
@@ -30,8 +30,7 @@ CLASSES = [
     'toothbrush'
 ]
 
-COLORS = [[0.000, 0.447, 0.741], [0.850, 0.325, 0.098], [0.929, 0.694, 0.125],
-          [0.494, 0.184, 0.556], [0.466, 0.674, 0.188], [0.301, 0.745, 0.933]]
+COLORS = ["black", "red", "green", "cyan", "blue"]
 
 # for output bounding box post-processing
 def box_cxcywh_to_xyxy(x):
@@ -71,10 +70,10 @@ def plot_results(pil_img, prob, boxes, save_path=None):
     plt.figure(figsize=(16,10))
     plt.imshow(pil_img)
     ax = plt.gca()
-    for p, (xmin, ymin, xmax, ymax), c in zip(prob, boxes.tolist(), COLORS * 100):
-        ax.add_patch(plt.Rectangle((xmin, ymin), xmax - xmin, ymax - ymin,
-                                   fill=False, color=c, linewidth=3))
+    for p, (xmin, ymin, xmax, ymax) in zip(prob, boxes.tolist()):
         cl = p.argmax()
+        ax.add_patch(plt.Rectangle((xmin, ymin), xmax - xmin, ymax - ymin,
+                                   fill=False, color=COLORS[cl], linewidth=3))
         # text = f'{CLASSES[cl]}: {p[cl]:0.2f}'
         # ax.text(xmin, ymin, text, fontsize=15,
         #         bbox=dict(facecolor='yellow', alpha=0.5))
@@ -89,7 +88,8 @@ def main():
         T.ToTensor(),
         T.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])
     ])
-    image_name =  "20220622_CanonEOS90D_0884_KGH.JPG"
+    id = "0566"
+    image_name =  f"20220622_CanonEOS90D_{id}_KGH.JPG"
     path = Path("erwiam_dataset") / "cam0" / "images" / image_name
     im = Image.open(path).convert("RGB")
     parser = get_args_parser()
