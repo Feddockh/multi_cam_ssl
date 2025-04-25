@@ -11,13 +11,14 @@ import contextlib
 import copy
 import numpy as np
 import torch
+import matplotlib.pyplot as plt
 
 from pycocotools.cocoeval import COCOeval
 from pycocotools.coco import COCO
 import pycocotools.mask as mask_util
 
 from util.misc import all_gather
-
+from jutils.utils import pdb
 
 class CocoEvaluator(object):
     def __init__(self, coco_gt, iou_types):
@@ -60,6 +61,24 @@ class CocoEvaluator(object):
     def accumulate(self):
         for coco_eval in self.coco_eval.values():
             coco_eval.accumulate()
+
+    def return_pr_curve(self):
+        coco_eval = self.coco_eval['bbox']
+        precision = coco_eval.eval['precision']
+        area_idx = 0
+        class_idx = 0
+        max_det_idx = -1
+        precision = precision[:, :, class_idx, area_idx, max_det_idx] # T, 101
+        n_iou_thres = precision.shape[0]
+        n_recall = precision.shape[1]
+        precision = precision.T
+        recall = np.linspace(0., 1., n_recall)
+        fig, ax = plt.subplots()
+        # precision would need to be shape N,m where N is the number of datapoints
+        # recall would need to be shape N,m where etc
+        ax.plot(recall, precision)
+        fig.savefig("pr curve.png")
+        return ax
 
     def summarize(self):
         for iou_type, coco_eval in self.coco_eval.items():
