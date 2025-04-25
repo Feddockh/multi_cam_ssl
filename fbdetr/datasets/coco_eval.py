@@ -62,21 +62,26 @@ class CocoEvaluator(object):
         for coco_eval in self.coco_eval.values():
             coco_eval.accumulate()
 
-    def return_pr_curve(self):
+    def save_pr_curve(self):
         coco_eval = self.coco_eval['bbox']
         precision = coco_eval.eval['precision']
         area_idx = 0
         class_idx = 0
         max_det_idx = -1
         precision = precision[:, :, class_idx, area_idx, max_det_idx] # T, 101
-        n_iou_thres = precision.shape[0]
-        n_recall = precision.shape[1]
         precision = precision.T
+        n_recall = precision.shape[0]
         recall = np.linspace(0., 1., n_recall)
+        iou_thresholds = [f"IoU @ {thres:.2f}" for thres in np.arange(0.5, 1., 0.05)]
         fig, ax = plt.subplots()
         # precision would need to be shape N,m where N is the number of datapoints
         # recall would need to be shape N,m where etc
-        ax.plot(recall, precision)
+        lines = ax.plot(recall, precision)
+        for l, thres in zip(lines, iou_thresholds):
+            l.set_label(thres)
+        ax.legend()
+        ax.set_xlabel("Recall")
+        ax.set_ylabel("Precision")
         fig.savefig("pr curve.png")
         return ax
 
