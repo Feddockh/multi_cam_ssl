@@ -24,7 +24,10 @@ from visual import plot, plot_trident, plot_pr_curves
 LOAD_METRICS = False
 
 # Visualize settings
-VIS = False
+VIS = True
+VIS_IMAGES = ["20220622_CanonEOS90D_1019_KGH.JPG",
+              "20220622_CanonEOS90D_1035_KGH.JPG",
+              "20220622_CanonEOS90D_0566_KGH.JPG"]
 SEED = 42
 
 # Path settings
@@ -130,8 +133,15 @@ map_metric = MeanAveragePrecision(
 print("Starting evaluation ...")
 with torch.no_grad():
     for i, (img, target, img_path) in enumerate(tqdm(loader, total=len(loader), desc="Inference", unit="img")):
+        # Skip the images that are not in the VIS_IMAGES list
+        if VIS and os.path.basename(img_path[0]) not in VIS_IMAGES:
+            continue
+
+        # Break loop if we are loading metrics
         if LOAD_METRICS:
             break
+
+        # Move the image to the device
         img = img.to(DEVICE)
 
         # Compress the dataset class labels to the current class labels
@@ -212,8 +222,8 @@ with torch.no_grad():
             )
 
             # We don't need to save all the images, just a few for visualization
-            if i >= 20:
-                break
+            # if i >= 20:
+            #     break
 
 if VIS:
     print("Visualization complete. Check the results folder for images.")
