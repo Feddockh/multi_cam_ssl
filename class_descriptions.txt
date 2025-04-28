@@ -5,8 +5,14 @@ shriveled shoots
 healthy branches
 shriveled branches
 healthy leaves
-shriveled leaves
+brown shriveled leaves
+healthy fruit
+infected fruit
+healthy flowers
+infected flowers
+leaves on the ground
 grass
 sky
 ground
-tree
+tree bark
+water

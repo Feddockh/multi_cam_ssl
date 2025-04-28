@@ -46,7 +46,8 @@ def plot(imgs, row_title=None, col_title=None, class_names=None, save_path=None,
         imgs = [imgs]
 
     n_rows, n_cols = len(imgs), len(imgs[0])
-    fig, axs = plt.subplots(n_rows, n_cols, squeeze=False, figsize=(4*n_cols, 4*n_rows))
+    # fig, axs = plt.subplots(n_rows, n_cols, squeeze=False, figsize=(4*n_cols, 4*n_rows))
+    fig, axs = plt.subplots(n_rows, n_cols, squeeze=False, figsize=(16, 10))
 
     # Construct a grid of images
     for r, row in enumerate(imgs):
@@ -144,9 +145,10 @@ def plot(imgs, row_title=None, col_title=None, class_names=None, save_path=None,
     else:
         plt.tight_layout()
 
+    plt.axis('off')
     if save_path:
         os.makedirs(os.path.dirname(save_path), exist_ok=True)
-        plt.savefig(save_path, dpi=300)
+        plt.savefig(save_path, dpi=300, bbox_inches='tight')
     else:
         plt.show()
     plt.close()

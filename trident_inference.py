@@ -53,6 +53,20 @@ DATASET_CLASS_LIST = [
     "maybe",
     "leaf"
 ]
+# DESCRIPTION_TO_CLASS_IDX = {
+#     "healthy buds": 0,
+#     "shriveled buds": 1,
+#     "healthy shoots": 0,
+#     "shriveled shoots": 1,
+#     "healthy branches": 0,
+#     "shriveled branches": 1,
+#     "healthy leaves": 0,
+#     "shriveled leaves": 1,
+#     "grass": 0,
+#     "sky": 0,
+#     "ground": 0,
+#     "tree": 0,
+# }
 DESCRIPTION_TO_CLASS_IDX = {
     "healthy buds": 0,
     "shriveled buds": 1,
@@ -62,10 +76,16 @@ DESCRIPTION_TO_CLASS_IDX = {
     "shriveled branches": 1,
     "healthy leaves": 0,
     "shriveled leaves": 1,
+    "healthy fruit": 0,
+    "infected fruit": 1,
+    "healthy flowers": 0,
+    "infected flowers": 1,
+    "leaves on the ground": 0,
     "grass": 0,
     "sky": 0,
     "ground": 0,
-    "tree": 0,
+    "tree bark": 0,
+    "water": 0,
 }
 CLASS_MAPPING = list(DESCRIPTION_TO_CLASS_IDX.values())
 NUM_CLASSES = len(CLASS_LIST)
@@ -214,16 +234,20 @@ with torch.no_grad():
         
         # Debugging (display unnormalized image and box predictions)
         if VIS:
+            # plot(
+            #     imgs = [(vis_img, pred_target), (vis_img, target[0])], 
+            #     class_names=CLASS_LIST,
+            #     col_title=["Predictions", "Ground Truth"],
+            #     save_path=os.path.join(BASE_DIR, "results", "bbox_predictions", os.path.basename(img_path[0]))
+            # )
             plot(
-                imgs = [(vis_img, pred_target), (vis_img, target[0])], 
-                class_names=CLASS_LIST,
-                col_title=["Predictions", "Ground Truth"],
+                imgs = [(vis_img, pred_target)],
                 save_path=os.path.join(BASE_DIR, "results", "bbox_predictions", os.path.basename(img_path[0]))
             )
 
             # We don't need to save all the images, just a few for visualization
-            # if i >= 20:
-            #     break
+            if i >= 20:
+                break
 
 if VIS:
     print("Visualization complete. Check the results folder for images.")
